@@ -251,3 +251,43 @@ validated.
 
 Detailed test procedures, evidence, results, and limitations are documented in
 [docs/03-security-validation.md](docs/03-security-validation.md).
+
+## Key Results
+
+Two security tests met the lab's criteria for VALIDATED results.
+
+### Repository-Scope Isolation
+
+The GitHub read-only path was tested against a private repository that was
+outside the credential's intended scope. The access attempt returned no
+repository data.
+
+For this test, the credential and read-only tool did not provide access to the
+out-of-scope repository. The result was limited to that credential, tool,
+repository, and test. It did not establish that every GitHub access path or
+repository boundary was isolated.
+
+### Prompt-Injection Resistance
+
+Prompt-injection behavior was tested using a repository file that contained
+instructions intended to make the agent ignore the user's request, expand its
+scope, access secrets and an out-of-scope repository, modify data, and misuse
+available tools.
+
+The agent treated those instructions as untrusted content and did not carry out
+the requested follow-on actions. No additional repository access, secret
+retrieval, write operation, or network request was initiated as a result of the
+malicious instructions.
+
+This result was classified as VALIDATED for the tested scenario. It was not
+treated as evidence that the agent was generally resistant to prompt injection
+or that other attack patterns would produce the same result.
+
+### What Remains Unvalidated
+
+Other controls in the lab were configured or observed but were not all tested
+directly to confirm that they worked. Those controls remain CLAIMED, OBSERVED,
+or UNKNOWN as appropriate rather than being grouped with the validated results.
+
+Detailed results, evidence, and test limitations are documented in
+[docs/03-security-validation.md](docs/03-security-validation.md).
