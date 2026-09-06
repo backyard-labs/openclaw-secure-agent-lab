@@ -151,3 +151,71 @@ outbound connectivity.
 This separation was intended to make authority explicit: a model could propose
 an action without automatically possessing the capability, credential, network
 path, or approval required to perform it.
+
+## Security Design
+
+The security design developed around a simple principle: useful agent
+capabilities should not imply unrestricted authority.
+
+As capabilities were added, each one created another way for the agent to
+interact with systems or data. Each capability was therefore evaluated as a
+governance and risk boundary, not just as a feature.
+
+The working model became:
+
+**capability → authority → risk → control → validation**
+
+Several design patterns were applied to constrain that authority.
+
+### Separate Read and Write Authority
+
+Read and write capabilities were exposed separately rather than treating access
+to a resource as a single permission. This separation was applied to both
+filesystem and GitHub access.
+
+For example, `files-ro` and `github-ro` provided read-oriented capabilities,
+while `files-rw-lab` and `github-rw-lab` provided separately constrained write
+paths for designated lab operations.
+
+### Scope Capabilities and Credentials
+
+MCP tools and credentials were restricted to the capabilities required for
+their defined function. Additional filtering reduced the set of operations
+exposed to the agent.
+
+This introduced multiple control layers between a model proposing an action and
+the external system accepting it.
+
+### Constrain Execution and Network Paths
+
+GitHub MCP services were moved into hardened containers with read-only
+filesystems, dropped Linux capabilities, and privilege escalation disabled.
+Outbound connectivity was also constrained through a controlled egress path
+rather than leaving the services with unrestricted network access.
+
+### Keep Human Authority Explicit
+
+Sensitive or scope-changing actions were treated as approval boundaries rather
+than ordinary agent decisions. The agent could propose an action, but the
+existence of a technically available capability did not automatically grant
+permission to use it.
+
+The operating pattern was:
+
+**AI proposes → human reviews and authorizes → action executes → evidence
+returns → result is evaluated**
+
+### Treat Configuration as a Claim Until Tested
+
+The lab ultimately distinguished between four evidence states:
+
+| State         | Meaning                                                                              |
+| ------------- | ------------------------------------------------------------------------------------ |
+| **CLAIMED**   | Documentation or configuration indicates that a control should exist                 |
+| **OBSERVED**  | An artifact or system state demonstrates that something exists or occurred           |
+| **VALIDATED** | An appropriate enforcement test demonstrated the control under the tested conditions |
+| **UNKNOWN**   | Available evidence is insufficient to support a stronger conclusion                  |
+
+Configuration settings or expected behavior were not treated as proof that a
+control was working. Where practical, the control was tested directly before
+it was considered validated.
