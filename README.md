@@ -219,3 +219,35 @@ The lab ultimately distinguished between four evidence states:
 Configuration settings or expected behavior were not treated as proof that a
 control was working. Where practical, the control was tested directly before
 it was considered validated.
+
+## Validation Approach
+
+The lab did not assume that a configured control was working as intended.
+Selected controls were tested by trying to use the capability in a way the
+control was expected to prevent or restrict.
+
+Each test started with the evidence we had and a specific security question.
+We identified what could go wrong, how the agent might reach that outcome, and
+which control was expected to stop or limit it.
+
+The reasoning process was:
+
+**artifact → hazard → exploitable path → control → residual risk**
+
+Tests were then planned around the specific boundary being checked. Before
+running a test, we checked whether it stayed within the approved scope and
+whether the action required explicit authorization. This included actions that
+could modify data or access resources outside the approved scope.
+
+The test cycle was:
+
+**observe → hypothesize → plan test → authority gate → act → observe result → update**
+
+This approach was used for tests such as GitHub repository-scope isolation and
+prompt-injection resistance. We limited each conclusion to what the test
+actually demonstrated. A successful test of one path was not treated as proof
+that every related control, tool, credential, or attack path had been
+validated.
+
+Detailed test procedures, evidence, results, and limitations are documented in
+[docs/03-security-validation.md](docs/03-security-validation.md).
