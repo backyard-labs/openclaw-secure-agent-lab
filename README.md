@@ -310,3 +310,27 @@ validation, and lessons learned.
 The build guide is the best starting point for reproducing the lab. The
 hardening and validation documents then show how the initial environment was
 constrained and tested.
+
+## Current Status
+
+The initial secure-agent lab baseline is complete.
+
+The first validation phase is also complete. Repository-scope isolation and
+prompt-injection resistance were tested and produced the VALIDATED results
+described above. Other controls will not be considered validated unless they
+are tested directly.
+
+The next phase will use the lab for practical agentic-security work and
+additional adversarial testing while continuing to document new controls,
+failures, and validation results as they occur.
+
+## Disclaimer
+
+This project documents a controlled lab environment and is intended for
+learning, experimentation, and security research. The validation results apply
+only to the configurations and test conditions described in this repository
+and should not be interpreted as proof that the system is secure against all
+attack paths.
+
+Public examples and evidence are sanitized to avoid exposing credentials,
+secrets, or other security-sensitive information.
