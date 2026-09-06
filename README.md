@@ -291,3 +291,22 @@ or UNKNOWN as appropriate rather than being grouped with the validated results.
 
 Detailed results, evidence, and test limitations are documented in
 [docs/03-security-validation.md](docs/03-security-validation.md).
+
+## Repository Guide
+
+The documents follow the lab from initial deployment through hardening,
+validation, and lessons learned.
+
+| Location                                                           | What it contains                                                                                   |
+| ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
+| [README.md](README.md)                                             | Project overview, architecture, security design, validation approach, and key results              |
+| [docs/01-build-and-deployment.md](docs/01-build-and-deployment.md) | Build steps and configuration for creating a comparable OpenClaw lab environment                   |
+| [docs/02-security-hardening.md](docs/02-security-hardening.md)     | Security controls used to constrain agent capabilities, credentials, execution, and network access |
+| [docs/03-security-validation.md](docs/03-security-validation.md)   | Test methodology, results, evidence, limitations, and what was or was not validated                |
+| [docs/04-lessons-learned.md](docs/04-lessons-learned.md)           | Problems encountered, design tradeoffs, and lessons from building and testing the lab              |
+| [diagrams/](diagrams/)                                             | Architecture and trust-boundary diagrams                                                           |
+| [evidence/](evidence/)                                             | Selected sanitized evidence supporting documented test results                                     |
+
+The build guide is the best starting point for reproducing the lab. The
+hardening and validation documents then show how the initial environment was
+constrained and tested.
