@@ -31,8 +31,8 @@ reasoning, prompt injection, excessive permissions, or unintended tool use.
 
 This led to practical work around filesystem scoping, MCP tool isolation,
 container hardening, controlled network egress, scoped credentials, separation
-of read and write capabilities, human approval boundaries, and validation of
-those controls.
+of read and write capabilities, human authorization procedures, and validation
+of those controls.
 
 Rather than treating the existence of a control as proof that it worked, the
 lab progressively adopted an evidence-oriented approach: distinguish what was
@@ -49,8 +49,9 @@ later used to help construct and maintain this repository.
 
 I remained the operator and decision-maker. Commands were executed in my lab
 environment, results were evaluated against actual system behavior,
-security-sensitive actions required explicit approval, and conclusions were
-based on observed or validated evidence rather than AI-generated claims alone.
+security-sensitive tests and consequential changes were explicitly authorized
+by the human operator, and conclusions were based on observed or validated
+evidence rather than AI-generated claims alone.
 
 That workflow became part of the experiment itself:
 
@@ -85,11 +86,11 @@ servers:
 The security work focused on the boundaries around those capabilities rather
 than on the model alone. Controls included filesystem scoping, separation of
 read and write authority, scoped credentials, container isolation, restricted
-network egress, MCP tool filtering, and explicit human approval for sensitive
-actions.
+network egress, MCP tool filtering, and a configured operator-approval policy
+for sensitive write actions, with runtime enforcement tested separately.
 
 Selected security boundaries were then tested through practical adversarial
-scenarios, including repository-scope isolation and prompt-injection resistance.
+scenarios, including repository-scope isolation and prompt-injection handling.
 Results were classified according to the strength of the available evidence
 rather than assuming that a configured control was an enforced control.
 
@@ -102,7 +103,8 @@ orchestration layer, while MCP servers expose individually scoped capabilities.
 ```text
                          Human Operator
                               │
-                    approval / authority
+                    operator authority /
+                    intended approval gate
                               │
                               ▼
                          OpenClaw Agent
@@ -131,7 +133,7 @@ orchestration layer, while MCP servers expose individually scoped capabilities.
 The model does not receive authority simply because it can reason about an
 action. Authority is mediated through the capabilities exposed to OpenClaw,
 the configuration of the MCP servers, credential scope, container and network
-controls, and human approval boundaries.
+controls, and operator authorization procedures.
 
 The final lab configuration used five OpenClaw-managed MCP servers:
 
@@ -150,7 +152,7 @@ outbound connectivity.
 
 This separation was intended to make authority explicit: a model could propose
 an action without automatically possessing the capability, credential, network
-path, or approval required to perform it.
+path, or intended operator authorization required to perform it.
 
 ## Security Design
 
@@ -196,9 +198,11 @@ rather than leaving the services with unrestricted network access.
 ### Keep Human Authority Explicit
 
 Sensitive or scope-changing actions were treated as approval boundaries rather
-than ordinary agent decisions. The agent could propose an action, but the
-existence of a technically available capability did not automatically grant
-permission to use it.
+than ordinary agent decisions. Operator authorization was part of the lab
+procedure, while technical approval enforcement was tested separately. In the
+tested ordinary OpenClaw agent write path, the expected interactive approval
+gate was TESTED — NOT ENFORCED; details are documented in
+[docs/03-security-validation.md](docs/03-security-validation.md).
 
 The operating pattern was:
 
@@ -244,7 +248,7 @@ The test cycle was:
 **observe → hypothesize → plan test → authority gate → act → observe result → update**
 
 This approach was used for tests such as GitHub repository-scope isolation and
-prompt-injection resistance. We limited each conclusion to what the test
+prompt-injection handling. We limited each conclusion to what the test
 actually demonstrated. A successful test of one path was not treated as proof
 that every related control, tool, credential, or attack path had been
 validated.
@@ -254,7 +258,8 @@ Detailed test procedures, evidence, results, and limitations are documented in
 
 ## Key Results
 
-Two security tests met the lab's criteria for VALIDATED results.
+Phase 1 validation produced two narrowly VALIDATED security results and one
+approval-enforcement finding.
 
 ### Repository-Scope Isolation
 
@@ -267,7 +272,7 @@ out-of-scope repository. The result was limited to that credential, tool,
 repository, and test. It did not establish that every GitHub access path or
 repository boundary was isolated.
 
-### Prompt-Injection Resistance
+### Prompt-Injection Handling
 
 Prompt-injection behavior was tested using a repository file that contained
 instructions intended to make the agent ignore the user's request, expand its
@@ -282,6 +287,20 @@ malicious instructions.
 This result was classified as VALIDATED for the tested scenario. It was not
 treated as evidence that the agent was generally resistant to prompt injection
 or that other attack patterns would produce the same result.
+
+### Write-Approval Enforcement
+
+The `github-rw-lab` service was configured with prompt approval, and the probe
+reported a prompt approval policy. A fresh ordinary OpenClaw agent test then
+exercised the actual write capability.
+
+The write succeeded without the expected interactive approval gate. The result
+was TESTED — NOT ENFORCED in the tested path and is limited to the tested
+OpenClaw 2026.9.1 ordinary agent execution path. Other execution paths and the
+root cause remain unresolved.
+
+Detailed approval-enforcement results and limitations are documented in
+[docs/03-security-validation.md](docs/03-security-validation.md).
 
 ### What Remains Unvalidated
 
@@ -304,8 +323,8 @@ validation, and lessons learned.
 | [docs/02-security-hardening.md](docs/02-security-hardening.md)     | Security controls used to constrain agent capabilities, credentials, execution, and network access |
 | [docs/03-security-validation.md](docs/03-security-validation.md)   | Test methodology, results, evidence, limitations, and what was or was not validated                |
 | [docs/04-lessons-learned.md](docs/04-lessons-learned.md)           | Problems encountered, design tradeoffs, and lessons from building and testing the lab              |
-| [diagrams/](diagrams/)                                             | Architecture and trust-boundary diagrams                                                           |
-| [evidence/](evidence/)                                             | Selected sanitized evidence supporting documented test results                                     |
+| [diagrams/](diagrams/)                                             | Standalone diagram area; current architecture and trust-boundary diagrams are embedded in the documentation |
+| [evidence/](evidence/)                                             | Public evidence policy and location for selected sanitized evidence artifacts when suitable for release |
 
 The build guide is the best starting point for reproducing the lab. The
 hardening and validation documents then show how the initial environment was
@@ -315,10 +334,15 @@ constrained and tested.
 
 The initial secure-agent lab baseline is complete.
 
-The first validation phase is also complete. Repository-scope isolation and
-prompt-injection resistance were tested and produced the VALIDATED results
-described above. Other controls will not be considered validated unless they
-are tested directly.
+The first validation phase is also complete. It produced both positive and
+negative findings: repository-scope isolation was VALIDATED narrowly for
+non-disclosure through the exact tested path, prompt-injection handling was
+VALIDATED narrowly for the tested interaction, and write-approval enforcement
+was TESTED — NOT ENFORCED in the tested ordinary agent path.
+
+The approval gap remains unresolved and is a candidate for remediation and
+regression testing in a later phase. Other controls will not be considered
+validated unless they are tested directly.
 
 The next phase will use the lab for practical agentic-security work and
 additional adversarial testing while continuing to document new controls,
