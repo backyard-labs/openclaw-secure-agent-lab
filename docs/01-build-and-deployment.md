@@ -50,6 +50,13 @@ The filesystem servers were isolated from the network. The network and GitHub
 servers used the `openclaw-mcp-egress` Docker network and the
 `openclaw-egress-proxy` proxy path.
 
+V1 later added a bounded GitHub-write workflow that keeps `github-rw-lab`
+disabled at rest and enables it temporarily only for an operator-launched
+dedicated `github-write-job` session. The build details below preserve the MCP
+foundation; the bounded-write architecture and validation are documented in
+[02-security-hardening.md](02-security-hardening.md) and
+[03-security-validation.md](03-security-validation.md).
+
 ## Prerequisites
 
 The core prerequisite sequence was:

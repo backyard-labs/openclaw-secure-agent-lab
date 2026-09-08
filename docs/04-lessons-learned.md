@@ -38,6 +38,8 @@ Get OpenClaw working
 → challenge boundaries
 → discover that evidence is not the same as proof
 → improve validation methodology
+→ remediate failed approval enforcement with bounded write authority
+→ regression test the bounded path
 → establish a secure-agent baseline
 ```
 
@@ -168,6 +170,10 @@ succeeded without the expected approval event.
 
 The negative result was preserved and documented rather than hidden. Remediation
 was intentionally deferred until the current-state finding had been recorded.
+The later V1 remediation did not rewrite that history. It reduced the
+available GitHub write authority by moving writes into a bounded
+operator-launched `github-write-job` path and then regression testing that
+path narrowly.
 
 Going forward, failed expectations should use a lifecycle like:
 
@@ -182,7 +188,7 @@ Expected behavior
 ```
 
 Do not rewrite history to make a failed control appear to have worked from the
-beginning. If approval remediation is implemented later, it should be
+beginning. When approval remediation is implemented later, it should be
 documented as:
 
 ```text
@@ -195,6 +201,15 @@ assumption
 ```
 
 only if the future retest supports that final state.
+
+For V1, the retested control was the bounded-write architecture, not the
+original `approval=prompt` mechanism. The approval finding remains:
+
+```text
+Configured approval policy: OBSERVED
+Probe-reported approval policy: OBSERVED
+Runtime enforcement: TESTED — NOT ENFORCED
+```
 
 ## 7. Lesson 5 — Evidence Quality Determines the Strength of the Security Claim
 
@@ -255,6 +270,12 @@ In the lab, filesystem authority was separated into `files-ro` and
 `github-rw-lab`. The write-capable GitHub path was further constrained to the
 intended lab use and a minimal exposed write tool.
 
+After the approval-enforcement failure, least privilege became more explicit:
+the normal main agent denied `github-rw-lab__*`, while a dedicated
+`github-write-job` session received only the narrow read and write tools needed
+for an operator-authorized bounded job. The write capability was disabled at
+rest and enabled only during the bounded job lifetime.
+
 This reduced authority and made the resulting trust boundaries easier to reason
 about and validate. It did not provide complete containment.
 
@@ -299,6 +320,13 @@ secret retrieval, destructive write, or network/tool action occurred.
 
 No such unauthorized follow-on behavior was observed in the tested interaction.
 That does not establish generic prompt-injection resistance.
+
+The bounded GitHub-write remediation followed the same system-level pattern.
+Validation checked tool projection, filesystem-bind separation, main-agent
+write exclusion, cross-agent delegation attempts, wrapper cleanup paths,
+lock contention, installed-wrapper behavior, and final disabled-at-rest state.
+Those tests supported narrow V1 conclusions without proving universal OpenClaw
+behavior.
 
 Going forward, prompt-injection and similar agentic-security tests should
 evaluate:
@@ -368,6 +396,10 @@ The approval investigation benefited from AI assistance in test design,
 evidence interpretation, and source inspection, but the evidence contradicted
 the expected security conclusion and the conclusion was revised.
 
+The bounded-write remediation extended that workflow: AI helped reason about
+architecture and regression checks, while the operator authorized the design,
+reviewed sensitive actions, and determined what the evidence justified.
+
 The documentation workflow provided another smaller example: a Codex edit
 accidentally retained old text alongside corrected text. Human review and
 Markdown preview caught the problem before commit and publication.
@@ -412,6 +444,11 @@ Capability changes
 Future additions to the agent should trigger renewed authority and validation
 review.
 
+When expected runtime authorization is insufficient, the next move should be
+to reduce and bound the authority that exists in the first place. V1 applied
+that lesson by keeping GitHub write authority out of the normal main-agent path
+and permitting it only through a dedicated bounded job.
+
 Before adding a capability:
 
 - What authority does it create?
@@ -435,10 +472,21 @@ Before publishing a conclusion:
 - Has sensitive evidence been sanitized?
 - Did a human review consequential AI-generated output?
 
+Before relying on a remediation:
+
+- Is it a new architectural boundary or only a restated policy?
+- Was the original negative finding preserved?
+- Which paths were regression-tested?
+- What termination, delegation, credential, and parameter-scope risks remain?
+
 ## 12. Closing Perspective
 
 Phase 1 established a practical baseline for building, constraining, and
-testing an OpenClaw agent with useful but bounded capabilities.
+testing an OpenClaw agent with useful but bounded capabilities. V1 closed with
+both positive and negative findings: selected controls were validated narrowly,
+the original approval-enforcement expectation was tested and not enforced in
+the ordinary agent path, and GitHub write authority was then bounded through a
+dedicated workflow that was regression-tested through the documented paths.
 
 The durable lesson is that secure-agent work is not finished when the agent can
 perform a useful action, and it is not finished when a control appears in

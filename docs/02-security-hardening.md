@@ -464,7 +464,96 @@ Evidence state: approval configuration OBSERVED; probe-reported policy
 OBSERVED; runtime enforcement TESTED — expected mandatory interactive approval
 was NOT ENFORCED in the tested ordinary agent path.
 
-## 12. Defense-in-Depth Summary
+## 12. Bounded GitHub-Write Remediation
+
+The failed approval-enforcement expectation led to an architectural
+remediation: reduce and bound the GitHub write authority that exists in the
+ordinary agent path.
+
+The V1 design became:
+
+```text
+normal main agent
+→ no GitHub write capability
+
+operator launches bounded write job
+→ temporary github-rw-lab enablement
+→ fresh dedicated github-write-job agent/session
+→ restricted GitHub tool surface
+→ authorized work
+→ job exits
+→ github-rw-lab disabled
+```
+
+At rest, `github-rw-lab` is disabled. The normal main agent separately denies:
+
+```text
+github-rw-lab__*
+```
+
+The dedicated agent is:
+
+```text
+github-write-job
+```
+
+Its intended V1 tool surface is limited to:
+
+```text
+github-ro__get_file_contents
+github-ro__get_commit
+github-rw-lab__create_or_update_file
+```
+
+Generic exec is denied for the dedicated write job. The dedicated agent also
+does not inherit the main agent's `/project` or `.git` bind mounts, so it does
+not receive the main agent's repository workspace as part of the tested
+bounded-write path.
+
+The operator-facing wrapper coordinates the bounded job lifecycle. It verifies
+that `github-rw-lab` is disabled before starting, refuses to start if the
+capability is already enabled, obtains an exclusive lock, enables
+`github-rw-lab`, creates a fresh dedicated-agent session, submits the
+operator-authorized bounded task, waits for completion or failure, and disables
+`github-rw-lab` during cleanup.
+
+Cleanup behavior was designed for normal completion, tool or GitHub error,
+timeout, operator interrupt, and injected launch-failure paths. The wrapper
+also rejects independent lock contention before agent execution.
+
+The tested wrapper artifact was installed as:
+
+```text
+/usr/local/sbin/openclaw-github-write-job
+```
+
+with owner `root:root` and mode `0755`. This protects the installed wrapper
+artifact from ordinary user modification. It is not a host-level privilege
+boundary: the wrapper executes as the invoking user and depends on a
+user-controlled OpenClaw installation and configuration.
+
+Evidence from later validation supported the bounded-write architecture
+narrowly for the tested paths:
+
+- dedicated-agent filesystem-bind separation
+- dedicated-agent tool minimization
+- positive authorized write through the dedicated path
+- main-agent exclusion from `github-rw-lab__create_or_update_file`
+- tested cross-agent delegation blocks
+- wrapper cleanup and lock-contention behavior
+- installed-wrapper smoke test
+- final disabled-at-rest `github-rw-lab` state
+
+These remediation results do not prove parameter-level authorization,
+unconditional revocation after non-trappable termination, universal OpenClaw
+execution-path isolation, or broad multi-write behavior. They also do not prove
+that the original `approval=prompt` mechanism became enforced.
+
+Evidence state: remediation architecture OBSERVED; bounded-write behavior
+VALIDATED NARROWLY through the tested ordinary-agent, dedicated-agent,
+delegation, wrapper lifecycle, and installed-wrapper paths.
+
+## 13. Defense-in-Depth Summary
 
 | Control | Security objective | Evidence state | Important limitation |
 | --- | --- | --- | --- |
@@ -478,13 +567,15 @@ was NOT ENFORCED in the tested ordinary agent path.
 | MCP tool filtering | Reduce model-visible tool surface | OBSERVED live probe surface | Tool filtering is not complete sandboxing |
 | `approval=prompt` configuration | Require prompt-mode approval policy for sensitive write tooling | OBSERVED | Configuration state does not prove runtime enforcement |
 | Mandatory interactive approval enforcement | Confirm human approval gate appears before write execution | TESTED — NOT ENFORCED in tested path | Applies to the tested OpenClaw 2026.9.1 ordinary agent execution path only |
+| Bounded GitHub-write workflow | Keep write authority out of the normal main-agent path and enable it only for bounded jobs | VALIDATED NARROWLY through tested paths | Does not prove parameter-level authorization, unconditional revocation, or universal OpenClaw isolation |
+| Root-owned wrapper artifact | Protect the installed wrapper artifact from ordinary user modification | OBSERVED plus installed-wrapper smoke test | Not a host-level privilege boundary; executes as invoking user |
 
 The table intentionally distinguishes observed configuration from demonstrated
 enforcement. Where a control was configured but not enforced in the tested path,
 the result is stated directly rather than forced into a misleading success
 state.
 
-## 13. Residual Risk
+## 14. Residual Risk
 
 The final baseline reduced authority and attack surface, but it did not
 eliminate risk.
@@ -499,6 +590,17 @@ Remaining risks include:
 - egress proxy bypass was not comprehensively adversarially tested
 - filesystem scope enforcement was not exhaustively tested
 - approval enforcement was not demonstrated for the tested ordinary agent path
+- bounded GitHub-write jobs still rely on natural-language operator scope and
+  do not mechanically constrain every repository path, branch, file, or write
+  parameter
+- non-trappable termination such as SIGKILL, host crash, VM crash, or power
+  loss could prevent wrapper cleanup and leave `github-rw-lab` enabled
+- the root-owned wrapper artifact protects wrapper integrity but is not a
+  host-level privilege boundary
+- cross-agent and main-agent isolation conclusions apply only to the tested
+  ordinary-agent, `sessions_spawn`, and `sessions_send` paths
+- broad multi-write behavior was not validated beyond the bounded jobs and
+  lifecycle cases tested
 - tool filtering reduces exposed capability but is not equivalent to complete
   sandboxing
 - future OpenClaw versions may change behavior
@@ -507,7 +609,7 @@ The useful security outcome is not a claim of perfect safety. The outcome is a
 clearer, smaller authority surface with evidence labels that separate observed
 state from tested enforcement.
 
-## 14. From Hardening to Validation
+## 15. From Hardening to Validation
 
 Hardening establishes intended controls. Validation asks whether those controls
 actually constrain behavior.
@@ -526,4 +628,5 @@ Configured control
 The next document,
 [03-security-validation.md](03-security-validation.md), examines
 adversarial/control-validation tests including repository-scope isolation,
-prompt injection handling, approval enforcement, and other tested boundaries.
+prompt injection handling, approval enforcement, bounded GitHub-write
+remediation, and other tested boundaries.

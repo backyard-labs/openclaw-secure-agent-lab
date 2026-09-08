@@ -21,6 +21,12 @@ The private lab evidence set can include items such as:
 - repository artifacts
 - validation notes
 - system and configuration observations
+- fresh-session tool projection
+- tool-action audit
+- MCP enabled/disabled state
+- wrapper failure-path results
+- lock-contention results
+- installed-artifact hash, ownership, and mode
 
 Raw evidence is not automatically published.
 

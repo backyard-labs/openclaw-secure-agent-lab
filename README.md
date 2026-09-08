@@ -1,8 +1,8 @@
 # OpenClaw Secure Agent Lab
 
 This project documents my hands-on deployment and security validation of an
-OpenClaw agent with access to local files, network resources, and GitHub through
-constrained MCP tools.
+OpenClaw agent with access to local files, network resources, and bounded
+GitHub operations through constrained MCP tools.
 
 The lab focuses on a practical security question:
 
@@ -31,8 +31,8 @@ reasoning, prompt injection, excessive permissions, or unintended tool use.
 
 This led to practical work around filesystem scoping, MCP tool isolation,
 container hardening, controlled network egress, scoped credentials, separation
-of read and write capabilities, human authorization procedures, and validation
-of those controls.
+of read and write capabilities, human authorization procedures, bounded
+GitHub-write remediation, and validation of those controls.
 
 Rather than treating the existence of a control as proof that it worked, the
 lab progressively adopted an evidence-oriented approach: distinguish what was
@@ -82,6 +82,7 @@ servers:
 - controlled outbound network access
 - read-only GitHub access
 - separately constrained GitHub write access for designated lab operations
+- a bounded dedicated-agent GitHub write workflow for V1 remediation
 
 The security work focused on the boundaries around those capabilities rather
 than on the model alone. Controls included filesystem scoping, separation of
@@ -96,9 +97,10 @@ rather than assuming that a configured control was an enforced control.
 
 ## Architecture
 
-The lab separates the model used for reasoning from the tools and credentials
-that determine what the agent can actually do. OpenClaw acts as the agent
-orchestration layer, while MCP servers expose individually scoped capabilities.
+The lab separates the model used for reasoning from the tools, credentials,
+and bounded workflows that determine what the agent can actually do. OpenClaw
+acts as the agent orchestration layer, while MCP servers expose individually
+scoped capabilities.
 
 ```text
                          Human Operator
@@ -135,7 +137,7 @@ action. Authority is mediated through the capabilities exposed to OpenClaw,
 the configuration of the MCP servers, credential scope, container and network
 controls, and operator authorization procedures.
 
-The final lab configuration used five OpenClaw-managed MCP servers:
+The final V1 lab configuration used five OpenClaw-managed MCP servers:
 
 | MCP server      | Purpose                                               |
 | --------------- | ----------------------------------------------------- |
@@ -144,6 +146,14 @@ The final lab configuration used five OpenClaw-managed MCP servers:
 | `fetch-net`     | Controlled outbound network retrieval                 |
 | `github-ro`     | Read-only GitHub operations                           |
 | `github-rw-lab` | Separately constrained GitHub write capability        |
+
+After validation showed that the expected interactive approval gate was not
+enforced in the tested ordinary agent path, V1 added a bounded GitHub-write
+workflow. The normal main agent does not receive GitHub write capability. For
+authorized write work, the operator launches a dedicated `github-write-job`
+session with a minimized tool surface and temporary `github-rw-lab` enablement;
+the write capability is disabled again through cleanup on the tested job-exit
+and failure paths.
 
 The GitHub MCP services were containerized and progressively hardened with
 read-only container filesystems, dropped Linux capabilities, prevention of
@@ -188,6 +198,11 @@ exposed to the agent.
 This introduced multiple control layers between a model proposing an action and
 the external system accepting it.
 
+The V1 remediation added another layer for GitHub writes: the main agent denies
+`github-rw-lab__*`, while a dedicated `github-write-job` path receives only the
+read tools and bounded write tool needed for an operator-authorized job. The
+write MCP server remains disabled at rest.
+
 ### Constrain Execution and Network Paths
 
 GitHub MCP services were moved into hardened containers with read-only
@@ -208,6 +223,10 @@ The operating pattern was:
 
 **AI proposes → human reviews and authorizes → action executes → evidence
 returns → result is evaluated**
+
+The bounded-write remediation preserved that human authorization procedure but
+reduced the authority available to ordinary agents instead of relying on the
+failed approval mechanism as the primary boundary.
 
 ### Treat Configuration as a Claim Until Tested
 
@@ -258,8 +277,9 @@ Detailed test procedures, evidence, results, and limitations are documented in
 
 ## Key Results
 
-Phase 1 validation produced two narrowly VALIDATED security results and one
-approval-enforcement finding.
+Phase 1 validation produced two narrowly VALIDATED security results, one
+approval-enforcement finding, and a bounded GitHub-write remediation that was
+regression-tested through narrow paths.
 
 ### Repository-Scope Isolation
 
@@ -302,11 +322,30 @@ root cause remain unresolved.
 Detailed approval-enforcement results and limitations are documented in
 [docs/03-security-validation.md](docs/03-security-validation.md).
 
+### Bounded GitHub-Write Remediation
+
+The approval-enforcement failure led to an architectural remediation: the main
+agent was kept without GitHub write capability, and bounded writes were moved
+into a dedicated `github-write-job` workflow with temporary `github-rw-lab`
+enablement, minimized tools, filesystem-bind separation, and cleanup on tested
+exit and failure paths.
+
+Regression testing showed the dedicated path could perform the authorized
+write, the main agent did not receive the write tool even while it was enabled
+for testing, tested cross-agent delegation paths were blocked, and the wrapper
+returned `github-rw-lab` to disabled state in the tested lifecycle cases.
+
+These results were VALIDATED NARROWLY through the tested paths. They do not
+prove universal OpenClaw isolation, unconditional revocation, parameter-level
+authorization, or that the original `approval=prompt` mechanism became
+enforced.
+
 ### What Remains Unvalidated
 
 Other controls in the lab were configured or observed but were not all tested
 directly to confirm that they worked. Those controls remain CLAIMED, OBSERVED,
-or UNKNOWN as appropriate rather than being grouped with the validated results.
+VALIDATED narrowly, TESTED — NOT ENFORCED, or UNKNOWN as appropriate rather
+than being grouped into broader claims.
 
 Detailed results, evidence, and test limitations are documented in
 [docs/03-security-validation.md](docs/03-security-validation.md).
@@ -318,11 +357,11 @@ validation, and lessons learned.
 
 | Location                                                           | What it contains                                                                                   |
 | ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
-| [README.md](README.md)                                             | Project overview, architecture, security design, validation approach, and key results              |
+| [README.md](README.md)                                             | Project overview, architecture, security design, validation approach, remediation, and key results |
 | [docs/01-build-and-deployment.md](docs/01-build-and-deployment.md) | Build steps and configuration for creating a comparable OpenClaw lab environment                   |
-| [docs/02-security-hardening.md](docs/02-security-hardening.md)     | Security controls used to constrain agent capabilities, credentials, execution, and network access |
-| [docs/03-security-validation.md](docs/03-security-validation.md)   | Test methodology, results, evidence, limitations, and what was or was not validated                |
-| [docs/04-lessons-learned.md](docs/04-lessons-learned.md)           | Problems encountered, design tradeoffs, and lessons from building and testing the lab              |
+| [docs/02-security-hardening.md](docs/02-security-hardening.md)     | Security controls and V1 bounded-write architecture used to constrain agent authority              |
+| [docs/03-security-validation.md](docs/03-security-validation.md)   | Test methodology, results, remediation validation, limitations, and what was or was not validated  |
+| [docs/04-lessons-learned.md](docs/04-lessons-learned.md)           | Problems encountered, design tradeoffs, remediation lessons, and lessons from testing the lab      |
 | [diagrams/](diagrams/)                                             | Standalone diagram area; current architecture and trust-boundary diagrams are embedded in the documentation |
 | [evidence/](evidence/)                                             | Public evidence policy and location for selected sanitized evidence artifacts when suitable for release |
 
@@ -340,9 +379,15 @@ non-disclosure through the exact tested path, prompt-injection handling was
 VALIDATED narrowly for the tested interaction, and write-approval enforcement
 was TESTED — NOT ENFORCED in the tested ordinary agent path.
 
-The approval gap remains unresolved and is a candidate for remediation and
-regression testing in a later phase. Other controls will not be considered
-validated unless they are tested directly.
+The approval gap remains unresolved as a root-cause question, but V1 added and
+tested a bounded GitHub-write architecture that keeps GitHub write authority
+out of the normal main-agent path and enables it only for dedicated,
+operator-authorized jobs. That remediation is VALIDATED NARROWLY through the
+tested ordinary-agent, dedicated-agent, delegation, wrapper lifecycle, and
+installed-wrapper paths documented in this repository.
+
+Other controls will not be considered validated unless they are tested
+directly.
 
 The next phase will use the lab for practical agentic-security work and
 additional adversarial testing while continuing to document new controls,
