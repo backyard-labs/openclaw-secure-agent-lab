@@ -1,8 +1,9 @@
 # OpenClaw Secure Agent Lab
 
-This project documents my hands-on deployment and security validation of an
-OpenClaw agent with access to local files, network resources, and bounded
-GitHub operations through constrained MCP tools.
+This project documents my hands-on deployment, security validation, and
+operational use of an OpenClaw agent with access to local files, network
+resources, bounded GitHub operations, and read-only security case evidence
+through constrained MCP tools.
 
 The lab focuses on a practical security question:
 
@@ -24,6 +25,17 @@ The lab therefore evolved from deployment into a security-engineering exercise:
 
 **functional agent → useful capabilities → authority boundaries → security
 controls → adversarial validation → evidence-backed baseline**
+
+Part II then used that baseline for practical SOC and detection-engineering
+work:
+
+```text
+Build → Harden → Validate
+                   ↓
+          Use the secured agent
+                   ↓
+Investigation → Detection Engineering
+```
 
 The goal was not to eliminate agent capabilities, but to constrain them so the
 agent could remain useful while limiting the consequences of incorrect
@@ -66,8 +78,9 @@ accountability remain explicit.
 
 The lab runs OpenClaw on an Ubuntu Server virtual machine hosted in VMware
 Workstation. The environment was built as a dedicated place to experiment with
-agent capabilities, security controls, and adversarial validation without
-granting the agent broad access to the host system or unrelated resources.
+agent capabilities, security controls, adversarial validation, and later
+security-operations work without granting the agent broad access to the host
+system or unrelated resources.
 
 OpenClaw was configured to support both a local Ollama model and an OpenAI API
 model. This allowed the lab to compare local and hosted model operation while
@@ -83,6 +96,7 @@ servers:
 - read-only GitHub access
 - separately constrained GitHub write access for designated lab operations
 - a bounded dedicated-agent GitHub write workflow for V1 remediation
+- read-only security case evidence through `cases-ro`
 
 The security work focused on the boundaries around those capabilities rather
 than on the model alone. Controls included filesystem scoping, separation of
@@ -94,6 +108,12 @@ Selected security boundaries were then tested through practical adversarial
 scenarios, including repository-scope isolation and prompt-injection handling.
 Results were classified according to the strength of the available evidence
 rather than assuming that a configured control was an enforced control.
+
+Part II also used a dedicated Splunk VM and synthetic endpoint-event datasets
+to compare Python detection logic with Splunk saved reports. Those detection
+results are documented as validated only for the tested synthetic datasets and
+the specific Python and Splunk implementations used in the lab, not as
+production validation.
 
 ## Architecture
 
@@ -350,6 +370,49 @@ than being grouped into broader claims.
 Detailed results, evidence, and test limitations are documented in
 [docs/03-security-validation.md](docs/03-security-validation.md).
 
+## Part II: Security Operations
+
+After the secure-agent baseline was established, the lab used the constrained
+agent for practical SOC and security-engineering work.
+
+The operating model was:
+
+```text
+Case evidence
+→ local model extraction/correlation
+→ hosted-model reasoning and challenge
+→ human analyst decision/approval
+```
+
+Mission 01 used read-only case evidence to investigate suspicious PowerShell
+behavior. The comparison was practical rather than ideological: local Ollama
+`qwen3.5:9b` was useful for extraction and summarization, while GPT-5.6 Sol was
+stronger for causal reasoning, adversarial challenge, ATT&CK reasoning, and
+design critique. Agent narrative was not treated as proof; raw evidence
+remained preferred for security-sensitive conclusions.
+
+Mission 02 used the secured lab for Office-to-PowerShell detection
+engineering. The analytic evolved from V1 scenario-wide correlation, to V2
+process-GUID causal correlation, to V3 behavioral detection with bounded Office
+ancestry, broader retrieval/execution behavior, stable GUID causality, temporal
+ordering, and Python/Splunk parity across adversarial scenarios A through L.
+
+The final V3 result is described as a `behavior_match`, not as a maliciousness
+verdict. SOC disposition remains a human analyst decision:
+
+```text
+behavior_match = TRUE
+→ context/enrichment
+→ Expected / Authorized, Needs Investigation, or Escalate
+```
+
+Detailed Part II documentation is in:
+
+- [docs/05-security-operations.md](docs/05-security-operations.md)
+- [docs/06-mission-01-investigation.md](docs/06-mission-01-investigation.md)
+- [docs/07-mission-02-detection.md](docs/07-mission-02-detection.md)
+- [docs/08-part-ii-lessons-learned.md](docs/08-part-ii-lessons-learned.md)
+
 ## Repository Guide
 
 The documents follow the lab from initial deployment through hardening,
@@ -357,17 +420,23 @@ validation, and lessons learned.
 
 | Location                                                           | What it contains                                                                                   |
 | ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
-| [README.md](README.md)                                             | Project overview, architecture, security design, validation approach, remediation, and key results |
+| [README.md](README.md)                                             | Project overview, architecture, security design, validation approach, operations use, and key results |
 | [docs/01-build-and-deployment.md](docs/01-build-and-deployment.md) | Build steps and configuration for creating a comparable OpenClaw lab environment                   |
 | [docs/02-security-hardening.md](docs/02-security-hardening.md)     | Security controls and V1 bounded-write architecture used to constrain agent authority              |
 | [docs/03-security-validation.md](docs/03-security-validation.md)   | Test methodology, results, remediation validation, limitations, and what was or was not validated  |
 | [docs/04-lessons-learned.md](docs/04-lessons-learned.md)           | Problems encountered, design tradeoffs, remediation lessons, and lessons from testing the lab      |
+| [docs/05-security-operations.md](docs/05-security-operations.md)   | Part II operating model for using the secured agent in SOC and security-engineering work           |
+| [docs/06-mission-01-investigation.md](docs/06-mission-01-investigation.md) | AI-assisted suspicious PowerShell investigation using constrained read-only evidence       |
+| [docs/07-mission-02-detection.md](docs/07-mission-02-detection.md) | Office-to-PowerShell detection engineering from V1 through V3, including adversarial testing and Splunk parity |
+| [docs/08-part-ii-lessons-learned.md](docs/08-part-ii-lessons-learned.md) | Engineering lessons from Part II investigation, detection design, and SOC operationalization |
 | [diagrams/](diagrams/)                                             | Standalone diagram area; current architecture and trust-boundary diagrams are embedded in the documentation |
 | [evidence/](evidence/)                                             | Public evidence policy and location for selected sanitized evidence artifacts when suitable for release |
 
 The build guide is the best starting point for reproducing the lab. The
 hardening and validation documents then show how the initial environment was
-constrained and tested.
+constrained and tested. The Part II documents show how the secured baseline was
+used for practical investigation and detection-engineering work while
+preserving evidence limits and human authority.
 
 ## Current Status
 
@@ -389,9 +458,14 @@ installed-wrapper paths documented in this repository.
 Other controls will not be considered validated unless they are tested
 directly.
 
-The next phase will use the lab for practical agentic-security work and
-additional adversarial testing while continuing to document new controls,
-failures, and validation results as they occur.
+Part II now documents the use of the secured baseline for practical
+security-operations work. Mission 01 documents AI-assisted PowerShell
+investigation using constrained read-only evidence.
+Mission 02 documents Office-to-PowerShell detection engineering through V1,
+V2, and V3, with Python and Splunk semantic parity validated for the synthetic
+A through L dataset. The detection result is intentionally framed as
+`behavior_match`, not as production validation or an automatic maliciousness
+verdict.
 
 ## Disclaimer
 
