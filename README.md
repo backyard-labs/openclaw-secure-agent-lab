@@ -122,6 +122,8 @@ and bounded workflows that determine what the agent can actually do. OpenClaw
 acts as the agent orchestration layer, while MCP servers expose individually
 scoped capabilities.
 
+The architecture diagram below represents the Part I / V1 secured baseline.
+
 ```text
                          Human Operator
                               │
@@ -157,7 +159,7 @@ action. Authority is mediated through the capabilities exposed to OpenClaw,
 the configuration of the MCP servers, credential scope, container and network
 controls, and operator authorization procedures.
 
-The final V1 lab configuration used five OpenClaw-managed MCP servers:
+The Part I / V1 secured baseline used five OpenClaw-managed MCP servers:
 
 | MCP server      | Purpose                                               |
 | --------------- | ----------------------------------------------------- |
@@ -297,7 +299,7 @@ Detailed test procedures, evidence, results, and limitations are documented in
 
 ## Key Results
 
-Phase 1 validation produced two narrowly VALIDATED security results, one
+Part I validation produced two narrowly VALIDATED security results, one
 approval-enforcement finding, and a bounded GitHub-write remediation that was
 regression-tested through narrow paths.
 
@@ -364,8 +366,9 @@ enforced.
 
 Other controls in the lab were configured or observed but were not all tested
 directly to confirm that they worked. Those controls remain CLAIMED, OBSERVED,
-VALIDATED narrowly, TESTED — NOT ENFORCED, or UNKNOWN as appropriate rather
-than being grouped into broader claims.
+VALIDATED narrowly, or UNKNOWN as appropriate rather than being grouped into
+broader claims. TESTED — NOT ENFORCED remains a separate test finding/result,
+not a fifth formal evidence state.
 
 Detailed results, evidence, and test limitations are documented in
 [docs/03-security-validation.md](docs/03-security-validation.md).
@@ -415,8 +418,9 @@ Detailed Part II documentation is in:
 
 ## Repository Guide
 
-The documents follow the lab from initial deployment through hardening,
-validation, and lessons learned.
+The documents follow the lab from initial deployment through Part I hardening
+and validation, then into Part II practical security-operations work and
+lessons learned.
 
 | Location                                                           | What it contains                                                                                   |
 | ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
@@ -442,7 +446,7 @@ preserving evidence limits and human authority.
 
 The initial secure-agent lab baseline is complete.
 
-The first validation phase is also complete. It produced both positive and
+Part I security validation is also complete. It produced both positive and
 negative findings: repository-scope isolation was VALIDATED narrowly for
 non-disclosure through the exact tested path, prompt-injection handling was
 VALIDATED narrowly for the tested interaction, and write-approval enforcement
