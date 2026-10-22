@@ -434,6 +434,7 @@ lessons learned.
 | [docs/07-mission-02-detection.md](docs/07-mission-02-detection.md) | Office-to-PowerShell detection engineering from V1 through V3, including adversarial testing and Splunk parity |
 | [docs/08-part-ii-lessons-learned.md](docs/08-part-ii-lessons-learned.md) | Engineering lessons from Part II investigation, detection design, and SOC operationalization |
 | [docs/09-operator-guide.md](docs/09-operator-guide.md) | Practical operating workflows for the existing lab, including investigations, detection engineering, and bounded GitHub updates |
+| [docs/OpenClaw_Secure_SSH_Tunnel_Runbook_v1.1.md](docs/OpenClaw_Secure_SSH_Tunnel_Runbook_v1.1.md) | Four-tier Windows-to-Ubuntu SSH access, tested S4U watchdog recovery, validation, and rollback |
 | [diagrams/](diagrams/)                                             | Standalone diagram area; current architecture and trust-boundary diagrams are embedded in the documentation |
 | [evidence/](evidence/)                                             | Public evidence policy and location for selected sanitized evidence artifacts when suitable for release |
 
